@@ -1,0 +1,79 @@
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+
+# Solicitar al usuario que seleccione una opción
+opcion = input("Escriba 'i' para procesar una imagen o 'v' para procesar un video en vivo: ").lower()
+
+# Opción 1: Proceso de detección de contornos en video en tiempo real
+if opcion == 'v':
+    print("Iniciando la detección de contornos en tiempo real...")
+
+    # Se comienza la captura de video desde la cámara
+    cap = cv2.VideoCapture(0)
+
+    # Bucle que se ejecuta de forma continua
+    while True:
+        # Captura de fotogramas del video
+        ret, frame = cap.read()
+
+        # Convertimos el fotograma a escala de grises
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Aplicamos un filtro Gaussiano para reducir el ruido
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        # Se utiliza el método de Otsu para binarizar la imagen
+        ret, otsu_threshold = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        # Se detectan los contornos de la imagen binarizada
+        contours, hierarchy = cv2.findContours(otsu_threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Se dibujan los contornos sobre la imagen original
+        cv2.drawContours(frame, contours, -1, (0, 255, 0), 2)  # Color verde para los contornos
+
+        # Mostrar el video original con los contornos resaltados
+        cv2.imshow('Video con Contornos Detectados', frame)
+
+        # Mostrar la imagen umbralizada con el método de Otsu
+        cv2.imshow('Imagen binarizada usando umbral de Otsu', otsu_threshold)
+
+        # Presionar la barra espaciadora para salir del bucle
+        if cv2.waitKey(1) & 0xFF == ord(' '):
+            break
+
+    # Se libera el acceso a la cámara y se cierran las ventanas de visualización
+    cap.release()
+    cv2.destroyAllWindows()
+
+# Opción 2: Procesamiento de imagen estática aplicando diferentes técnicas de umbralado
+elif opcion == 'i':
+    print("Procesando una imagen estática...")
+
+    # Cargamos la imagen en escala de grises desde el archivo
+    img = cv2.imread('ejemplo1.jpeg', 0)  # Usamos 0 para cargar en escala de grises
+
+    # Aplicamos umbralado global con un valor fijo
+    ret1, th1 = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+
+    # Aplicamos el método de umbral de Otsu directamente
+    ret2, th2 = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Umbral de Otsu después de aplicar un filtro Gaussiano
+    blur = cv2.GaussianBlur(img, (5, 5), 0)
+    ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Mostramos las imágenes resultantes con sus títulos correspondientes
+    titles = ['Imagen Original', 'Umbralado Global (v=127)', "Umbral de Otsu", "Otsu después de filtro Gaussiano"]
+    images = [img, th1, th2, th3]
+
+    for i in range(4):
+        plt.subplot(2, 2, i + 1)
+        plt.imshow(images[i], 'gray')
+        plt.title(titles[i])
+        plt.xticks([]), plt.yticks([])
+    plt.show()
+
+# Si el usuario ingresa una opción no válida
+else:
+    print("Opción no reconocida. Por favor, ingrese 'i' para video o 'v' para imagen.")
